@@ -74,23 +74,16 @@ def home():
 # Gets Padrão
 # Get Clientes - listar todos os clientes
 @app.get("/clientes")
-def get_clientes():
-    clientes = {}
-    try:
-        with open(clientes_file, mode='r', newline='', encoding='utf-8') as file:
-            reader = csv.reader(file)
-            next(reader)  # Pular cabeçalho
-            for row in reader:
-                if row:  # Verificar se a linha não está vazia
-                    clientes[row[0]] = {
-                        "nome": row[1],
-                        "sobrenome": row[2],
-                        "data_nascimento": row[3],
-                        "cpf": row[4]
-                    }
-        return clientes
-    except Exception as e:
-        return {"erro": str(e)}
+def clientes():
+    Clientes_dic = {}#Dicionário para armazenar os clientes lidos do arquivo CSV.
+    with open(clientes_file, mode='r', newline='', encoding='utf-8') as file:
+        reader = csv.reader(file)#le o arquivo
+        for linha in reader:#percorre cada linha
+            if linha[0] == 'ID': 
+                continue
+            else:
+                Clientes_dic[linha[0]] = {"NOME":linha[1], "SOBRENOME":linha[2], "DATA DE NASCIMENTO":linha[3],"CPF":linha[4] }#Adiciona o cliente ao dicionário "Clientes", onde a chave é o ID do cliente (linha[0]) e o valor é o nome do cliente (linha[1]).
+    return Clientes_dic
 
 #Get Produtos - listar todos os produtos
 @app.get("/produtos")
@@ -121,7 +114,7 @@ def ordens():
 
 # Posts Padrão
 # Post Clientes - Adicionar um novo cliente
-@app.post("/add_clientes")
+@app.post("/clientes")
 def add_cliente(cliente: Clientes):
     data = [["ID", "NOME", "SOBRENOME", "DATA DE NASCIMENTO", "CPF"]]
     ultimo_id = 0
@@ -129,21 +122,22 @@ def add_cliente(cliente: Clientes):
     with open(clientes_file, mode='r', newline='', encoding='utf-8') as file:
         reader = csv.reader(file)
         for row in reader:
+            
             if row[0] == "ID":
                 continue
             
             # Verificar CPF duplicado
             if row[4] == cliente.cpf:
                 return {"erro": "CPF já cadastrado"}
-            else:
-                data.append(row)
-                
-            if int(row[0]) > ultimo_id:
+            
+            data.append(row) #adicionar o cpf sem estar duplicado
+            
+            if int(row[0])== ultimo_id:
                 ultimo_id = int(row[0])
 
     novo_id = ultimo_id + 1
     novo_cliente = [
-        str(novo_id),
+        int(novo_id),
         cliente.nome,
         cliente.sobrenome,
         str(cliente.data_de_nascimento),
@@ -161,8 +155,9 @@ def add_cliente(cliente: Clientes):
     }
 
 
+
 # Post Produtos - Adicionar um novo produto
-@app.post("/add_produtos")
+@app.post("/produtos")
 def add_produtos(produto: Produto):  
     data = [
             ["ID", "NOME", "FORNECEDOR", "QUANTIDADE"]
@@ -197,10 +192,10 @@ def add_produtos(produto: Produto):
     }
 
 # Post Ordens de Vendas - Criar uma nova ordem de vendas
-@app.post("/add_ordens")
+@app.post("/ordens")
 def add_ordens(ordem: OrdensDeVendas):
     data = [
-        ["ID", "ID_CLIENTE", "ID_PRODUTO"]
+        [ "ID", "ID_CLIENTE", "ID_PRODUTO"]
     ]
     ultimo_id = 0
 
@@ -234,32 +229,27 @@ def add_ordens(ordem: OrdensDeVendas):
 # Deletes Padrão
 # Delete Clientes - Remover um cliente
 
-@app.delete("/del_clientes/{cliente_id}")
-def del_cliente(cliente_id:int):
+@app.delete("/clientes/{clientes_id}")
+def deletar_clientes(clientes_id:str):
     data = [
-        ["ID", "NOME", "SOBRENOME", "DATA DE NASCIMENTO", "CPF"]
-    ]
+            ["ID", "NOME", "SOBRENOME", "DATA DE NASCIMENTO", "CPF"]
+        ]
     
-    Clientes = {}
+    cliente_dic = {}
 
     with open(clientes_file, mode='r', newline='', encoding='utf-8') as file:
         reader = csv.reader(file)
-        for row in reader:
-            if row[0] == 'ID':
+        for linha in reader:
+            if linha[0] == 'ID':
                 continue
             else:
-                data.append(row)
-    
-   
-    for row in data:
-        if row[0] == "ID":
-            continue
-        if int(row[0]) == cliente_id:
-            data.pop(data.index(row))
+                data.append(linha)
+    for linha in data:
+        if linha[0] == clientes_id:
+            data.pop(data.index(linha))
             break
-
     else:
-        return {"ERRO":"ID informado não existe"}        
+        return {"ERRO": "ID informado não existe"} 
     
     with open(clientes_file, mode='w', newline='', encoding='utf-8') as file:
         writer = csv.writer(file)
@@ -267,20 +257,26 @@ def del_cliente(cliente_id:int):
     
     with open(clientes_file, mode='r', newline='', encoding='utf-8') as file:
         reader = csv.reader(file)
-        for row in reader:
-            if row[0] == 'ID':
+        for linha in reader:
+            if linha[0] == 'ID':
                 continue
             else:
-                Clientes[row[0]] = row[1]
+                cliente_dic[linha[0]] = {
+    "NOME": linha[1],
+    "SOBRENOME": linha[2],
+    "DATA DE NASCIMENTO": linha[3],
+    "CPF": linha[4]
+}
 
-    return Clientes
+    return cliente_dic
+
 
 # Delete Produtos - Remover um produto
 @app.delete("/produtos/{produto_id}")
 def deletar_produto(produto_id:str):
     data = [
-            ["ID", "NOME", "SOBRENOME", "DATA DE NASCIMENTO", "CPF"]
-        ]
+    ["ID", "NOME", "FORNECEDOR", "QUANTIDADE"]
+]
     
     produtos_dic = {}
 
@@ -318,11 +314,50 @@ def deletar_produto(produto_id:str):
 
 # Put Padrão
 # Put Clientes - Editar um cliente
-@app.put("/edit_clientes/{cliente_id}")
+@app.put("/clientes/{cliente_id}")
+async def edit_cliente(cliente_id: int, cliente: Clientes):
+    data = [
+        ["ID", "NOME", "SOBRENOME", "DATA DE NASCIMENTO", "CPF"]
+    ]
+    
+    Clientes = {}
+
+    with open(clientes_file, mode='r', newline='', encoding='utf-8') as file:
+        reader = csv.reader(file)
+        for row in reader:
+            if row[0] == 'ID':
+                continue
+            else:
+                data.append(row)
+
+        for linha in data:
+            if linha[0] == str (cliente_id):
+                linha[1] = cliente.nome
+                linha[2] = cliente.sobrenome
+                linha[3] = str (cliente.data_de_nascimento)
+                linha[4] = str (cliente.cpf)
+                break
+
+        else:
+            return {"ERRO": "ID informado não existe"}
+            
+        with open(clientes_file, mode='w', newline='', encoding='utf-8') as file:
+            writer = csv.writer(file)
+            writer.writerows(data)
+        
+        with open(clientes_file, mode='r', newline='', encoding='utf-8') as file:
+            reader = csv.reader(file)
+            for row in reader:
+                if row[0] == 'ID':
+                    continue
+                else:
+                    Clientes[row[0]] = row[1]
+
+        return Clientes
 
 
 # Put Produtos - Editar um produto
-@app.put("/edit_produtos/{produto_id}")
+@app.put("/produtos/{produto_id}")
 async def edit_produto(produto_id: int, produto: Produto):
     data = [
         ["ID", "NOME", "FORNECEDOR", "QUANTIDADE"]
@@ -338,12 +373,13 @@ async def edit_produto(produto_id: int, produto: Produto):
             else:
                 data.append(row)
         
-        
+        cont = False
         for linha in data:
             if linha[0] == str(produto_id):
                 linha[1] = produto.nome
                 linha[2] = produto.fornecedor
                 linha[3] = str(produto.quantidade)
+                cont = True
                 break
         
         else:
@@ -353,13 +389,16 @@ async def edit_produto(produto_id: int, produto: Produto):
             writer = csv.writer(file)
             writer.writerows(data)
         
+        # Ler arquivo atualizado para retornar todos produtos
         with open(produtos_file, mode='r', newline='', encoding='utf-8') as file:
             reader = csv.reader(file)
+            next(reader)  # pular cabeçalho
             for row in reader:
-                if row[0] == 'ID':
-                    continue
-                else:
-                    Produtos[row[0]] = row[1]
+                Produtos[row[0]] = {
+                "nome": row[1],
+                "fornecedor": row[2],
+                "quantidade": int(row[3])
+            }
 
-        return Produtos
+    return Produtos
 

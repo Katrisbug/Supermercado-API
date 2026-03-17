@@ -1,5 +1,4 @@
-ID,NOME,FORNECEDOR,QUANTIDADE
-1,Leite Integral (1 litro),Laticínios Vale Verde,150
+ID,NOME,SOBRENOME,DATA DE NASCIMENTO,CPF
 2,Café Torrado e Moído (500g),Café Bom Grão,87
 3,Macarrão Espaguete (500g),Massas Santa Maria,210
 4,Açúcar Refinado (2kg),Usina Doce Vida,124 
@@ -9,3 +8,4 @@ ID,NOME,FORNECEDOR,QUANTIDADE
 8,Papel Higiênico (4 rolos),Indústria de Papéis Higipell,105
 9,Molho de Tomate (340g),Pomodoro Alimentos,183
 10,Detergente Líquido (500ml),Limpax Indústria,112
+12,frff,Silva,10
