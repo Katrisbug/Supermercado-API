@@ -36,7 +36,6 @@ else:
     print('O arquivo já existe!')
 
 
-
 #Arquivo Ordem De Vendas 
 if not os.path.exists(ordens_file):    
     with open(ordens_file, mode='w', newline='', encoding='utf-8') as file:
@@ -117,32 +116,31 @@ def ordens():
 @app.post("/clientes")
 def add_cliente(cliente: Clientes):
     data = [["ID", "NOME", "SOBRENOME", "DATA DE NASCIMENTO", "CPF"]]
-    ultimo_id = 0
+    ids = []
 
     with open(clientes_file, mode='r', newline='', encoding='utf-8') as file:
         reader = csv.reader(file)
+        next(reader, None)  # pula o cabeçalho
+
         for row in reader:
-            
-            if row[0] == "ID":
-                continue
-            
             # Verificar CPF duplicado
             if row[4] == cliente.cpf:
                 return {"erro": "CPF já cadastrado"}
             
-            data.append(row) #adicionar o cpf sem estar duplicado
-            
-            if int(row[0])== ultimo_id:
-                ultimo_id = int(row[0])
+            ids.append(int(row[0]))  # guarda os IDs
+            data.append(row)
 
-    novo_id = ultimo_id + 1
+    # gera novo ID automaticamente
+    novo_id = max(ids, default=0) + 1
+
     novo_cliente = [
-        int(novo_id),
+        novo_id,
         cliente.nome,
         cliente.sobrenome,
         str(cliente.data_de_nascimento),
         cliente.cpf
     ]
+
     data.append(novo_cliente)
 
     with open(clientes_file, mode='w', newline='', encoding='utf-8') as file:
@@ -309,6 +307,41 @@ def deletar_produto(produto_id:str):
     return produtos_dic
 
 # Delete OrdensDeVendas - Remover uma ordem de venda
+@app.delete("/ordens/{ordens_id}")
+def deletar_ordens(ordens_id:str):
+    data = [
+    ["ID", "ID_CLIENTE", "ID_PRODUTO"]
+]
+    
+    ordens_dic = {}
+
+    with open(ordens_file, mode='r', newline='', encoding='utf-8') as file:
+        reader = csv.reader(file)
+        for linha in reader:
+            if linha[0] == 'ID':
+                continue
+            else:
+                data.append(linha)
+    for linha in data:
+        if linha[0] == ordens_id:
+            data.pop(data.index(linha))
+            break
+    else:
+        return {"ERRO": "ID informado não existe"} 
+    
+    with open(ordens_file, mode='w', newline='', encoding='utf-8') as file:
+        writer = csv.writer(file)
+        writer.writerows(data)
+    
+    with open(ordens_file, mode='r', newline='', encoding='utf-8') as file:
+        reader = csv.reader(file)
+        for linha in reader:
+            if linha[0] == 'ID':
+                continue
+            else:
+                ordens_dic[linha[0]] = { "ID_CLIENTE":linha[1], "ID_PRODUTO":linha[2]}
+
+    return ordens_dic
 
 
 
@@ -330,12 +363,14 @@ async def edit_cliente(cliente_id: int, cliente: Clientes):
             else:
                 data.append(row)
 
+        cont = False
         for linha in data:
             if linha[0] == str (cliente_id):
                 linha[1] = cliente.nome
                 linha[2] = cliente.sobrenome
                 linha[3] = str (cliente.data_de_nascimento)
                 linha[4] = str (cliente.cpf)
+                cont = True
                 break
 
         else:
@@ -347,11 +382,14 @@ async def edit_cliente(cliente_id: int, cliente: Clientes):
         
         with open(clientes_file, mode='r', newline='', encoding='utf-8') as file:
             reader = csv.reader(file)
+            next(reader)  # pular cabeçalho
             for row in reader:
-                if row[0] == 'ID':
-                    continue
-                else:
-                    Clientes[row[0]] = row[1]
+                Clientes[row[0]] = {
+                "nome": row[1],
+                "sobrenome": row[2],
+                "data de nascimento": str(row[3])
+                "cpf": str(row[4])
+            }
 
         return Clientes
 

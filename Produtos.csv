@@ -1,11 +1,10 @@
-ID,NOME,SOBRENOME,DATA DE NASCIMENTO,CPF
+ID,NOME,FORNECEDOR,QUANTIDADE
 2,Café Torrado e Moído (500g),Café Bom Grão,87
 3,Macarrão Espaguete (500g),Massas Santa Maria,210
-4,Açúcar Refinado (2kg),Usina Doce Vida,124 
+4,Açúcar Refinado (2kg),Usina Doce Vida,124
 5,Biscoito Recheado de Chocolate (140g),Panificadora Sabor & Cia,96
 6,Sabão em Pó (1kg),Química Limpeza Total,72
 7,Refrigerante de Cola (2 litros),Bebidas Geladas S.A.,48
 8,Papel Higiênico (4 rolos),Indústria de Papéis Higipell,105
 9,Molho de Tomate (340g),Pomodoro Alimentos,183
 10,Detergente Líquido (500ml),Limpax Indústria,112
-12,frff,Silva,10
