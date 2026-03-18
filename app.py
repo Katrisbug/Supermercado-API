@@ -55,7 +55,21 @@ class Clientes(BaseModel):
     data_de_nascimento: date
     cpf: str
 
+class Cliente(BaseModel):
+    id: int
+    nome: str
+    sobrenome: str
+    data_de_nascimento: date
+    cpf: str
+    
+
+class Produtos(BaseModel):#Define o formato de dados que a API aceita.
+    nome: str
+    fornecedor: str
+    quantidade: int
+
 class Produto(BaseModel):#Define o formato de dados que a API aceita.
+    id:int
     nome: str
     fornecedor: str
     quantidade: int
@@ -63,6 +77,12 @@ class Produto(BaseModel):#Define o formato de dados que a API aceita.
 class OrdensDeVendas(BaseModel):
     cliente_id: int
     produto_id: int
+
+class OrdensDeVenda(BaseModel):
+    id: int
+    cliente_id: int
+    produto_id: int
+
 
 
 # Rota Padrão
@@ -107,7 +127,11 @@ def ordens():
             if row[0] == 'ID':
                 continue
             else:
-                Ordens[row[0]] = row[1]
+                Ordens[row[0]] = {
+                    "ID_CLIENTE": row[1],
+                    "ID_PRODUTO": row[2]
+                }
+
 
     return Ordens
 
@@ -156,7 +180,7 @@ def add_cliente(cliente: Clientes):
 
 # Post Produtos - Adicionar um novo produto
 @app.post("/produtos")
-def add_produtos(produto: Produto):  
+def add_produtos(produto: Produtos):  
     data = [
             ["ID", "NOME", "FORNECEDOR", "QUANTIDADE"]
         ]  # Cabeçalho 
@@ -347,13 +371,15 @@ def deletar_ordens(ordens_id:str):
 
 # Put Padrão
 # Put Clientes - Editar um cliente
-@app.put("/clientes/{cliente_id}")
-async def edit_cliente(cliente_id: int, cliente: Clientes):
+# Put Padrão
+# Put Clientes - Editar um cliente
+@app.put("/clientes")
+async def edit_cliente(cliente: Cliente):
     data = [
         ["ID", "NOME", "SOBRENOME", "DATA DE NASCIMENTO", "CPF"]
     ]
     
-    Clientes = {}
+    clientes_dic = {}
 
     with open(clientes_file, mode='r', newline='', encoding='utf-8') as file:
         reader = csv.reader(file)
@@ -363,45 +389,47 @@ async def edit_cliente(cliente_id: int, cliente: Clientes):
             else:
                 data.append(row)
 
-        cont = False
-        for linha in data:
-            if linha[0] == str (cliente_id):
-                linha[1] = cliente.nome
-                linha[2] = cliente.sobrenome
-                linha[3] = str (cliente.data_de_nascimento)
-                linha[4] = str (cliente.cpf)
-                cont = True
-                break
+    for linha in data:
+        if linha[0] == "ID":
+            continue
 
-        else:
-            return {"ERRO": "ID informado não existe"}
-            
-        with open(clientes_file, mode='w', newline='', encoding='utf-8') as file:
-            writer = csv.writer(file)
-            writer.writerows(data)
-        
-        with open(clientes_file, mode='r', newline='', encoding='utf-8') as file:
-            reader = csv.reader(file)
-            next(reader)  # pular cabeçalho
-            for row in reader:
-                Clientes[row[0]] = {
-                "nome": row[1],
-                "sobrenome": row[2],
-                "data de nascimento": str(row[3])
-                "cpf": str(row[4])
-            }
+        if int(linha[0]) == cliente.id:
+            linha[1] = cliente.nome
+            linha[2] = cliente.sobrenome
+            linha[3] = str(cliente.data_de_nascimento)
+            linha[4] = cliente.cpf
+            break
+    else:
+        return {"ERRO": "ID informado não existe"}
 
-        return Clientes
+    with open(clientes_file, mode='w', newline='', encoding='utf-8') as file:
+        writer = csv.writer(file)
+        writer.writerows(data)
+
+    with open(clientes_file, mode='r', newline='', encoding='utf-8') as file:
+        reader = csv.reader(file)
+        for linha in reader:
+            if linha[0] == 'ID':
+                continue
+            else:
+                clientes_dic[linha[0]] = {
+                    "NOME": linha[1],
+                    "SOBRENOME": linha[2],
+                    "DATA DE NASCIMENTO": linha[3],
+                    "CPF": linha[4]
+                }
+
+    return clientes_dic
 
 
 # Put Produtos - Editar um produto
-@app.put("/produtos/{produto_id}")
-async def edit_produto(produto_id: int, produto: Produto):
+@app.put("/produtos")
+async def edit_produto(produto: Produto):
     data = [
         ["ID", "NOME", "FORNECEDOR", "QUANTIDADE"]
     ]
     
-    Produtos = {}
+    produtos_dic = {}
 
     with open(produtos_file, mode='r', newline='', encoding='utf-8') as file:
         reader = csv.reader(file)
@@ -410,33 +438,77 @@ async def edit_produto(produto_id: int, produto: Produto):
                 continue
             else:
                 data.append(row)
-        
-        cont = False
-        for linha in data:
-            if linha[0] == str(produto_id):
-                linha[1] = produto.nome
-                linha[2] = produto.fornecedor
-                linha[3] = str(produto.quantidade)
-                cont = True
-                break
-        
-        else:
-            return {"ERRO": "ID informado não existe"}
-            
-        with open(produtos_file, mode='w', newline='', encoding='utf-8') as file:
-            writer = csv.writer(file)
-            writer.writerows(data)
-        
-        # Ler arquivo atualizado para retornar todos produtos
-        with open(produtos_file, mode='r', newline='', encoding='utf-8') as file:
-            reader = csv.reader(file)
-            next(reader)  # pular cabeçalho
-            for row in reader:
-                Produtos[row[0]] = {
-                "nome": row[1],
-                "fornecedor": row[2],
-                "quantidade": int(row[3])
-            }
 
-    return Produtos
+    for linha in data:
+        if linha[0] == "ID":
+            continue
 
+        if int(linha[0]) == produto.id:
+            linha[1] = produto.nome
+            linha[2] = produto.fornecedor
+            linha[3] = str(produto.quantidade)
+            break
+    else:
+        return {"ERRO": "ID informado não existe"}
+
+    with open(produtos_file, mode='w', newline='', encoding='utf-8') as file:
+        writer = csv.writer(file)
+        writer.writerows(data)
+
+    with open(produtos_file, mode='r', newline='', encoding='utf-8') as file:
+        reader = csv.reader(file)
+        for linha in reader:
+            if linha[0] == 'ID':
+                continue
+            else:
+                produtos_dic[linha[0]] = {
+                    "NOME": linha[1],
+                    "FORNECEDOR": linha[2],
+                    "QUANTIDADE": linha[3]
+                }
+
+    return produtos_dic
+
+@app.put("/ordens")
+async def edit_ordem(ordem: OrdensDeVenda):
+    data = [
+        ["ID", "ID_CLIENTE", "ID_PRODUTO"]
+    ]
+    
+    ordens_dic = {}
+
+    with open(ordens_file, mode='r', newline='', encoding='utf-8') as file:
+        reader = csv.reader(file)
+        for row in reader:
+            if row[0] == 'ID':
+                continue
+            else:
+                data.append(row)
+
+    for linha in data:
+        if linha[0] == "ID":
+            continue
+
+        if int(linha[0]) == ordem.id:
+            linha[1] = str(ordem.cliente_id)
+            linha[2] = str(ordem.produto_id)
+            break
+    else:
+        return {"ERRO": "ID informado não existe"}
+
+    with open(ordens_file, mode='w', newline='', encoding='utf-8') as file:
+        writer = csv.writer(file)
+        writer.writerows(data)
+
+    with open(ordens_file, mode='r', newline='', encoding='utf-8') as file:
+        reader = csv.reader(file)
+        for linha in reader:
+            if linha[0] == 'ID':
+                continue
+            else:
+                ordens_dic[linha[0]] = {
+                    "ID_CLIENTE": linha[1],
+                    "ID_PRODUTO": linha[2]
+                }
+
+    return ordens_dic
